@@ -1,7 +1,7 @@
 {
   "name": "lanlan3292-terraria-player-map-renderer",
   "version": "1.0.0",
-  "description": "Generate Terraria .map files from world tile data.",
+  "description": "Encode Terraria world tiles as .map binary data for transport.",
   "main": "./PlayerMapRenderer.js",
   "exports": {
     ".": "./PlayerMapRenderer.js"

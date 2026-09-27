@@ -1,6 +1,6 @@
 # lanlan3292-terraria-player-map-renderer
 
-使用 Node.js 从 Terraria 世界 tile 数据生成 `.map` 文件。无需安装第三方运行时依赖，要求 Node.js 18 或更高版本。
+将 Terraria 世界 tile 数据编码为 `.map` 二进制数据供应用传输。核心 API 返回 Node.js `Buffer`；不会自动写入磁盘。要求 Node.js 18 或更高版本。
 
 本库的地图格式编码和 palette option-count 数据参考 TEdit 的 [PlayerMapRenderer.cs](https://github.com/TEdit/Terraria-Map-Editor/blob/fd2c5bc5f9b24b90a3db22f24bce439b42fd769c/src/TEdit/Editor/Plugins/PlayerMapRenderer.cs)。上游项目使用 Microsoft Public License（MS-PL）；本分发附带 [LICENSE](LICENSE)。
 
@@ -13,25 +13,30 @@ npm install github:lanlan3292/lanlan3292-terraria-player-map-renderer
 ## 使用
 
 ```js
-const { buildMapAsync } = require('lanlan3292-terraria-player-map-renderer');
+const { buildMapBuffer } = require('lanlan3292-terraria-player-map-renderer');
 
-const outputFile = await buildMapAsync(world, './maps', {
+const mapBuffer = buildMapBuffer(world, {
   maxTileId: 753,
   maxWallId: 366,
 });
-console.log(`Wrote ${outputFile}`);
+
+response.writeHead(200, {
+  'content-type': 'application/octet-stream',
+  'content-length': mapBuffer.length,
+});
+response.end(mapBuffer);
 ```
 
-`outputPath` 必须是已存在的目录。`buildMapAsync` 根据 `WorldGenVersion` 使用 `WorldGUID` 或 `WorldId` 命名文件，写入完成后返回文件完整路径，并将 world 的 file revision 加一。
+`buildMapBuffer()` 返回完整 `.map` 内容的 `Buffer`，可直接交给 HTTP response、消息队列或其他二进制传输接口；调用方决定如何传输或保存。
 
-也可以使用同步内存 API：
+如需由库直接写入文件，可选用 `buildMapAsync()`：
 
 ```js
-const { buildMapBuffer } = require('lanlan3292-terraria-player-map-renderer');
-const mapBytes = buildMapBuffer(world);
+const { buildMapAsync } = require('lanlan3292-terraria-player-map-renderer');
+const outputFile = await buildMapAsync(world, './maps');
 ```
 
-它返回完整 `.map` 文件的 `Buffer`，并同样递增 world 的 file revision。
+`outputPath` 必须是已存在的目录。此便利方法按 `WorldGenVersion` 选择 `WorldGUID` 或 `WorldId` 命名文件，并返回文件完整路径。两种 API 都会递增 world 的 file revision。
 
 ## World 数据
 
@@ -46,11 +51,13 @@ World 可使用 TEdit 的 PascalCase 属性，也可使用对应的 camelCase �
 
 ## 示例
 
-Node.js 文件示例会创建一个小型演示世界并写出 `.map` 文件：
+Node.js 示例会创建一个小型演示世界，并通过 HTTP endpoint 传输二进制 map 响应，不会写文件：
 
 ```sh
 node examples/node.js
 ```
+
+请求 `http://127.0.0.1:4180/map` 可取得 `application/octet-stream` 响应；`X-Map-File-Name` 响应头提供建议文件名。
 
 启动本地浏览器演示：
 
@@ -67,13 +74,13 @@ npm run demo
 
 ## API
 
-### `buildMapAsync(world, outputPath, options?)`
-
-将 `.map` 文件写入已有目录，返回 `Promise<string>`。
-
 ### `buildMapBuffer(world, options?)`
 
-返回完整 `.map` 文件的 `Buffer`。
+返回完整 `.map` 二进制内容的 Node.js `Buffer`。
+
+### `buildMapAsync(world, outputPath, options?)`
+
+可选的磁盘写入便利 API。`outputPath` 必须是已存在的目录，返回 `Promise<string>`。
 
 ### `MapHelper.initialize(maxTileId?, maxWallId?)`
 

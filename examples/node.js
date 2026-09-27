@@ -1,8 +1,7 @@
 'use strict';
 
-const fs = require('node:fs/promises');
-const path = require('node:path');
-const { buildMapAsync } = require('lanlan3292-terraria-player-map-renderer');
+const http = require('node:http');
+const { buildMapBuffer } = require('lanlan3292-terraria-player-map-renderer');
 
 async function main() {
   const width = 32;
@@ -45,10 +44,25 @@ async function main() {
     Tiles: tiles,
   };
 
-  const outputDirectory = path.join(__dirname, 'output');
-  await fs.mkdir(outputDirectory, { recursive: true });
-  const outputFile = await buildMapAsync(world, outputDirectory);
-  console.log(`Map written to ${outputFile}`);
+  const mapBuffer = buildMapBuffer(world);
+  const fileName = `${world.WorldGUID}.map`;
+  const server = http.createServer((request, response) => {
+    if (request.method !== 'GET' || request.url !== '/map') {
+      response.writeHead(404).end();
+      return;
+    }
+
+    response.writeHead(200, {
+      'content-type': 'application/octet-stream',
+      'content-length': mapBuffer.length,
+      'x-map-file-name': fileName,
+    });
+    response.end(mapBuffer);
+  });
+
+  server.listen(4180, '127.0.0.1', () => {
+    console.log(`Serving ${mapBuffer.length} binary bytes at http://127.0.0.1:4180/map`);
+  });
 }
 
 main().catch((error) => {
