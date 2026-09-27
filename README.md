@@ -59,7 +59,7 @@ npm run build:demo
 npm run demo
 ```
 
-然后打开 `http://127.0.0.1:4173`，选择 `.wld` 世界文件。解析器、压缩器和 map 编码器都已打包在静态 Worker 中；页面无需 Node 服务即可部署到 GitHub Pages，世界文件在浏览器本地处理，不会上传。更新浏览器解析代码或依赖后重新运行 `npm run build:demo`。解析依赖 `terraria-world-file`，其公开支持范围为 Terraria 1.3.5.3 至 1.4.4.9；更高版本的世界文件可能无法解析。
+然后打开 `http://127.0.0.1:4173`，选择 `.wld` 世界文件。解析器、压缩器和 map 编码器都已打包在静态 Worker 中；页面无需 Node 服务即可部署到 GitHub Pages，世界文件在浏览器本地处理，不会上传。更新浏览器解析代码或依赖后重新运行 `npm run build:demo`。解析依赖 `terraria-world-file`，基础支持范围为 Terraria 1.3.5.3 至 1.4.4.9；v323 及更新版本会跳过未知 header 尾字段，但 tile 区段仍严格校验，未来格式若修改 tile 编码则可能无法解析。
 
 启用 GitHub Pages，将仓库根目录作为 Pages 发布源，然后访问 `/examples/` 下的 `index.html`。
 

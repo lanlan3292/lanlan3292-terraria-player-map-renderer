@@ -2071,9 +2071,14 @@ self.onmessage = async (event) => {
     self.postMessage({ type: "status", message: "Reading world file\u2026" });
     const parser = await new FileReader().loadFile(fileLoader, file);
     self.postMessage({ type: "status", message: "Parsing world tiles\u2026" });
-    const parsedWorld = parser.parse({
-      sections: ["fileFormatHeader", "header", "worldTiles"]
+    const parsedFile = parser.parse({ sections: ["fileFormatHeader"] });
+    const version = parsedFile.fileFormatHeader.version;
+    const parsedHeader = parser.parse({
+      sections: ["header"],
+      ignorePointers: version >= 323
     });
+    const parsedTiles = parser.parse({ sections: ["worldTiles"] });
+    const parsedWorld = { ...parsedFile, ...parsedHeader, ...parsedTiles };
     const preview = createMapPreview(parsedWorld);
     const worldInfo = {
       title: parsedWorld.header.mapName,
