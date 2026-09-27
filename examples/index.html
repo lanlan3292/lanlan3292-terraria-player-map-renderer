@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terraria .wld to .map</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172b35;
+      --muted: #5d7075;
+      --paper: #f2f5f1;
+      --line: #d4ded9;
+      --panel: #fbfcf8;
+      --green: #8ac36b;
+      --blue: #69bdcf;
+      --coral: #e87959;
+      --gold: #e8b752;
+      --error: #a73527;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 72px;
+      padding: 14px clamp(18px, 5vw, 72px);
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .mark {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      background: var(--coral);
+      color: white;
+      font-size: 19px;
+      font-weight: 800;
+    }
+    .brand-name { font-weight: 800; letter-spacing: .04em; }
+    .eyebrow { color: var(--muted); font-size: 12px; }
+    main { width: min(1120px, 92vw); margin: 42px auto 56px; }
+    .intro { display: flex; justify-content: space-between; align-items: end; gap: 28px; margin-bottom: 24px; }
+    h1 { margin: 6px 0 0; font-size: clamp(28px, 5vw, 42px); line-height: 1.05; }
+    .intro p { max-width: 430px; margin: 0; color: var(--muted); line-height: 1.55; }
+    .converter {
+      display: grid;
+      grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+      min-height: 460px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+    .controls { padding: 22px; border-right: 1px solid var(--line); }
+    .section-label { margin: 0 0 13px; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .file-picker {
+      display: grid;
+      gap: 10px;
+      min-height: 126px;
+      align-content: center;
+      padding: 17px;
+      border: 1px dashed #91a59c;
+      background: #f6f8f3;
+    }
+    .file-picker input { width: 100%; font: inherit; }
+    .file-name { overflow-wrap: anywhere; color: var(--muted); font-size: 13px; }
+    .action {
+      width: 100%;
+      min-height: 43px;
+      margin-top: 14px;
+      padding: 9px 12px;
+      border: 0;
+      background: var(--ink);
+      color: white;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .action:disabled { background: #9da9a6; cursor: not-allowed; }
+    .action:not(:disabled):hover { background: #28515c; }
+    .status { min-height: 42px; margin: 14px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .status[data-state="error"] { color: var(--error); }
+    progress { display: block; width: 100%; height: 7px; margin-top: 8px; accent-color: #5c9d55; }
+    .privacy { margin: 22px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .preview { display: flex; min-width: 0; flex-direction: column; }
+    .preview-head, .preview-foot { display: flex; justify-content: space-between; gap: 12px; padding: 13px 17px; color: var(--muted); font-size: 12px; }
+    .preview-head { border-bottom: 1px solid var(--line); }
+    .preview-content {
+      display: grid;
+      flex: 1;
+      min-height: 320px;
+      place-items: center;
+      overflow: auto;
+      padding: 22px;
+      background-color: #e7efea;
+      background-image: radial-gradient(#adc1b7 .7px, transparent .7px);
+      background-size: 13px 13px;
+    }
+    .placeholder { max-width: 310px; color: var(--muted); line-height: 1.6; text-align: center; }
+    canvas { display: block; width: min(100%, 900px); height: auto; image-rendering: pixelated; border: 6px solid white; box-shadow: 0 10px 26px #213d371c; }
+    .preview-foot { border-top: 1px solid var(--line); }
+    .compatibility { margin: 15px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    [hidden] { display: none !important; }
+    @media (max-width: 720px) {
+      header { min-height: 62px; }
+      main { margin-top: 28px; }
+      .intro { display: block; }
+      .intro p { margin-top: 12px; }
+      .converter { grid-template-columns: 1fr; }
+      .controls { border-right: 0; border-bottom: 1px solid var(--line); }
+      .preview-content { min-height: 250px; padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="mark" aria-hidden="true">T</div>
+      <div><div class="brand-name">TERRARIA MAP</div><div class="eyebrow">PLAYER MAP RENDERER</div></div>
+    </div>
+    <div class="eyebrow">WORLD FILE → PLAYER MAP</div>
+  </header>
+  <main>
+    <section class="intro">
+      <div><div class="eyebrow">LOCAL WORLD CONVERTER</div><h1>.wld to .map</h1></div>
+      <p>选择 Terraria 世界文件，解析 tile 数据并生成对应的玩家地图文件。</p>
+    </section>
+    <section class="converter" aria-label="Terraria world map converter">
+      <aside class="controls">
+        <h2 class="section-label">World file</h2>
+        <div class="file-picker">
+          <input id="world-file" type="file" accept=".wld,application/octet-stream" aria-label="选择 Terraria 世界文件">
+          <span id="file-name" class="file-name">尚未选择文件</span>
+        </div>
+        <button class="action" id="convert" type="button" disabled>生成玩家 .map</button>
+        <button class="action" id="download" type="button" hidden>下载玩家 .map</button>
+        <p class="status" id="status" role="status" aria-live="polite">选择一个 .wld 文件开始。</p>
+        <progress id="progress" max="100" value="0" hidden></progress>
+        <p class="privacy">解析与地图生成均在此设备的浏览器 Worker 中执行，世界文件不会上传。</p>
+      </aside>
+      <div class="preview">
+        <div class="preview-head"><span>WORLD PREVIEW</span><span id="world-title">尚无地图</span></div>
+        <div class="preview-content">
+          <p class="placeholder" id="placeholder">世界缩略图将在解析后显示。生成完成后可下载 `.map` 文件。</p>
+          <canvas id="map-preview" hidden aria-label="从世界文件解析出的地图缩略图"></canvas>
+        </div>
+        <div class="preview-foot"><span id="dimensions">等待世界文件</span><span id="file-size">.wld → .map</span></div>
+      </div>
+    </section>
+    <p class="compatibility">解析器支持 Terraria 1.3.5.3 至 1.4.4.9。较新或不兼容的世界文件会显示解析错误。</p>
+  </main>
+  <script type="module">
+    const fileInput = document.querySelector('#world-file');
+    const fileName = document.querySelector('#file-name');
+    const convertButton = document.querySelector('#convert');
+    const downloadButton = document.querySelector('#download');
+    const status = document.querySelector('#status');
+    const progress = document.querySelector('#progress');
+    const canvas = document.querySelector('#map-preview');
+    const context = canvas.getContext('2d');
+    const placeholder = document.querySelector('#placeholder');
+    const worldTitle = document.querySelector('#world-title');
+    const dimensions = document.querySelector('#dimensions');
+    const fileSize = document.querySelector('#file-size');
+    const worker = new Worker('./wld-worker.bundle.js', { type: 'module' });
+    let selectedFile = null;
+    let output = null;
+
+    function setStatus(message, state = 'working') {
+      status.textContent = message;
+      status.dataset.state = state;
+    }
+
+    function formatBytes(size) {
+      if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+      return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    fileInput.addEventListener('change', () => {
+      selectedFile = fileInput.files?.[0] ?? null;
+      output = null;
+      downloadButton.hidden = true;
+      canvas.hidden = true;
+      placeholder.hidden = false;
+      progress.hidden = true;
+      worldTitle.textContent = '尚无地图';
+      dimensions.textContent = '等待世界文件';
+      fileSize.textContent = '.wld → .map';
+      fileName.textContent = selectedFile?.name ?? '尚未选择文件';
+      convertButton.hidden = false;
+      convertButton.disabled = !selectedFile;
+      convertButton.hidden = false;
+      if (selectedFile) setStatus('文件已就绪，开始解析并生成地图。', 'ready');
+      else setStatus('选择一个 .wld 文件开始.', 'ready');
+    });
+
+    convertButton.addEventListener('click', () => {
+      if (!selectedFile) return;
+      convertButton.disabled = true;
+      fileInput.disabled = true;
+      progress.hidden = false;
+      progress.value = 0;
+      setStatus('正在读取世界文件…');
+      worker.postMessage({ file: selectedFile });
+    });
+
+    downloadButton.addEventListener('click', () => {
+      if (!output) return;
+      const url = URL.createObjectURL(new Blob([output.bytes], { type: 'application/octet-stream' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = output.fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus(`已生成 ${output.fileName}（${formatBytes(output.bytes.byteLength)}）。`, 'done');
+    });
+
+    worker.addEventListener('message', (event) => {
+      const message = event.data;
+      if (message.type === 'status') {
+        setStatus(message.message);
+      } else if (message.type === 'preview') {
+        canvas.width = message.preview.width;
+        canvas.height = message.preview.height;
+        context.putImageData(
+          new ImageData(new Uint8ClampedArray(message.preview.pixels), canvas.width, canvas.height),
+          0,
+          0,
+        );
+        canvas.hidden = false;
+        placeholder.hidden = true;
+        worldTitle.textContent = message.worldInfo.title || '未命名世界';
+        dimensions.textContent = `${message.worldInfo.width.toLocaleString()} × ${message.worldInfo.height.toLocaleString()} tiles`;
+        fileSize.textContent = `World version ${message.worldInfo.version}`;
+      } else if (message.type === 'progress') {
+        progress.value = message.percent;
+        setStatus(`正在编码地图数据… ${message.percent}%`);
+      } else if (message.type === 'complete') {
+        output = { fileName: message.fileName, bytes: message.bytes };
+        fileInput.disabled = false;
+        convertButton.hidden = true;
+        downloadButton.hidden = false;
+        downloadButton.disabled = false;
+        progress.value = 100;
+        setStatus(`地图已生成：${message.fileName}（${formatBytes(message.bytes.byteLength)}）。`, 'done');
+      } else if (message.type === 'error') {
+        fileInput.disabled = false;
+        convertButton.disabled = false;
+        progress.hidden = true;
+        setStatus(`无法生成地图：${message.message}`, 'error');
+      }
+    });
+
+    worker.addEventListener('error', (event) => {
+      fileInput.disabled = false;
+      convertButton.disabled = false;
+      progress.hidden = true;
+      setStatus(`浏览器 Worker 错误：${event.message || '无法加载 Worker 脚本或模块。'}`, 'error');
+    });
+  </script>
+</body>
+</html>

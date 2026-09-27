@@ -1,0 +1,38 @@
+{
+  "name": "lanlan3292-terraria-player-map-renderer",
+  "version": "1.0.0",
+  "description": "Generate Terraria .map files from world tile data.",
+  "main": "./PlayerMapRenderer.js",
+  "exports": {
+    ".": "./PlayerMapRenderer.js"
+  },
+  "type": "commonjs",
+  "files": [
+    "PlayerMapRenderer.js",
+    "README.md",
+    "LICENSE",
+    "examples/"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "demo": "node examples/server.js",
+    "build:demo": "esbuild examples/wld-worker.mjs --bundle --platform=browser --format=esm --outfile=examples/wld-worker.bundle.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MS-PL",
+  "keywords": [
+    "terraria",
+    "map",
+    "player-map",
+    "tedit"
+  ],
+  "dependencies": {
+    "fflate": "0.8.3",
+    "terraria-world-file": "1.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.5"
+  }
+}
